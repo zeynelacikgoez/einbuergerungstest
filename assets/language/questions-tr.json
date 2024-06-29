@@ -1,0 +1,58 @@
+[
+  {
+    "part": "Bölüm I",
+    "section": "Genel Sorular",
+    "task": "Görev 1",
+    "id": "0001",
+    "question": {
+      "text": "Almanya'da insanlar hükümete karşı açıkça bir şeyler söyleyebilirler çünkü...",
+      "imageReference": "none"
+    },
+    "options": [
+      {
+        "text": "burada din özgürlüğü vardır.",
+        "isCorrect": false
+      },
+      {
+        "text": "insanlar vergi öderler.",
+        "isCorrect": false
+      },
+      {
+        "text": "insanlar oy kullanma hakkına sahiptir.",
+        "isCorrect": false
+      },
+      {
+        "text": "burada ifade özgürlüğü vardır.",
+        "isCorrect": true
+      }
+    ]
+  },
+  {
+    "part": "Bölüm I",
+    "section": "Genel Sorular",
+    "task": "Görev 2",
+    "id": "0002",
+    "question": {
+      "text": "Almanya'da ebeveynler, çocuklarının 14 yaşına kadar okulda...",
+      "imageReference": "none"
+    },
+    "options": [
+      {
+        "text": "tarih dersine katılıp katılmayacağına karar verebilirler.",
+        "isCorrect": false
+      },
+      {
+        "text": "din dersine katılıp katılmayacağına karar verebilirler.",
+        "isCorrect": true
+      },
+      {
+        "text": "politika dersine katılıp katılmayacağına karar verebilirler.",
+        "isCorrect": false
+      },
+      {
+        "text": "dil dersine katılıp katılmayacağına karar verebilirler.",
+        "isCorrect": false
+      }
+    ]
+  }
+]
