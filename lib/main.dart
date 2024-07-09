@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import 'screens/main_menu.dart';
+import 'main_scaffold.dart';
 import 'services/training_mode_service.dart';
 import 'services/language_service.dart';
 import 'services/quiz_service.dart';
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
               brightness: Brightness.light,
-              primaryColor: const Color(0xFF1E88E5), // Blau
+              primaryColor: const Color(0xFF1E88E5),
               scaffoldBackgroundColor: Colors.white,
               cardColor: Colors.white,
               textTheme: const TextTheme(
@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
             ),
             darkTheme: ThemeData(
               brightness: Brightness.dark,
-              primaryColor: const Color(0xFF1E88E5), // Blau
+              primaryColor: const Color(0xFF1E88E5),
               scaffoldBackgroundColor: const Color(0xFF121212),
               cardColor: const Color(0xFF1E1E1E),
               textTheme: const TextTheme(
@@ -80,7 +80,7 @@ class MyApp extends StatelessWidget {
               Locale('ar'),
             ],
             locale: languageService.currentLocale,
-            home: const MainMenu(),
+            home: const MainScaffold(),
           );
         },
       ),

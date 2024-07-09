@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../services/theme_service.dart';
 import '../widgets/mode_selection_dialog.dart';
 import '../models/quiz_mode.dart';
-import 'settings_page.dart';
-import '../services/quiz_service.dart';
 import '../services/training_mode_service.dart';
-import '../services/theme_service.dart';
+import '../services/quiz_service.dart';
 import 'quiz_page.dart';
 import 'training_mode_page.dart';
 
 class MainMenu extends StatelessWidget {
-  const MainMenu({Key? key}) : super(key: key);
+  const MainMenu({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final themeService = Provider.of<ThemeService>(context);
-    final theme = Theme.of(context);
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -40,7 +37,6 @@ class MainMenu extends StatelessWidget {
                 ),
               ),
             ),
-            _buildNavigationBar(context),
           ],
         ),
       ),
@@ -262,61 +258,24 @@ class MainMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildNavigationBar(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      color: theme.scaffoldBackgroundColor,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavBarItem(Icons.home, 'Start', theme),
-            _buildNavBarItem(Icons.chat_bubble, 'Chat', theme),
-            _buildNavBarItem(Icons.settings, 'Optionen', theme, onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsPage()),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavBarItem(IconData icon, String label, ThemeData theme, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: theme.iconTheme.color),
-          const SizedBox(height: 4),
-          Text(label, style: theme.textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-
   void _startTrainingMode(BuildContext context) async {
     final trainingModeService = Provider.of<TrainingModeService>(context, listen: false);
     
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
+      builder: (BuildContext dialogContext) {
+        return const Dialog(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: EdgeInsets.all(20.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Trainingsmodus wird geladen'),
-                const SizedBox(height: 20),
+                Text('Trainingsmodus wird geladen'),
+                SizedBox(height: 20),
                 SizedBox(
                   width: 60,
-                  child: const LinearProgressIndicator(),
+                  child: LinearProgressIndicator(),
                 ),
               ],
             ),
@@ -327,24 +286,23 @@ class MainMenu extends StatelessWidget {
 
     try {
       await trainingModeService.initialize();
+      if (!context.mounted) return;
       Navigator.of(context).pop(); // Close loading dialog
-      if (context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const TrainingModePage()),
-        );
-      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const TrainingModePage()),
+      );
     } catch (e) {
+      if (!context.mounted) return;
       Navigator.of(context).pop(); // Close loading dialog
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Laden des Trainingsmodus: $e')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fehler beim Laden des Trainingsmodus: $e')),
+      );
     }
   }
 
   void _showModeSelectionDialog(BuildContext context, QuizMode mode) async {
+    final quizService = Provider.of<QuizService>(context, listen: false);
     bool hasActualProgress = await QuizService.hasActualProgress();
     bool isCompleted = await QuizService.isQuizCompleted();
 
