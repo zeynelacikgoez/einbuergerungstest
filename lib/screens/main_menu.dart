@@ -6,6 +6,7 @@ import '../models/quiz_mode.dart';
 import 'settings_page.dart';
 import '../services/quiz_service.dart';
 import '../services/training_mode_service.dart';
+import '../services/theme_service.dart';
 import 'quiz_page.dart';
 import 'training_mode_page.dart';
 
@@ -15,11 +16,13 @@ class MainMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final themeService = Provider.of<ThemeService>(context);
+    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(context, themeService),
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
@@ -44,31 +47,29 @@ class MainMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context, ThemeService themeService) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const CircleAvatar(
-            radius: 16,
-            backgroundImage: NetworkImage('https://example.com/profile.jpg'),
+          IconButton(
+            icon: Icon(themeService.darkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () {
+              themeService.toggleTheme();
+            },
           ),
-          Row(
-            children: [
-              _buildFilterButton('Sprache'),
-              const SizedBox(width: 8),
-            ],
-          ),
+          _buildFilterButton('Sprache', theme),
         ],
       ),
     );
   }
 
-  Widget _buildFilterButton(String text) {
+  Widget _buildFilterButton(String text, ThemeData theme) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.grey[800],
+        backgroundColor: theme.primaryColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -79,21 +80,22 @@ class MainMenu extends StatelessWidget {
   }
 
   Widget _buildRecentlyPlayed(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Schnellzugriff',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 16),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildRecentlyPlayedItem('Alle Fragen', 'assets/image/img001.png', () => _startTrainingMode(context)),
-              _buildRecentlyPlayedItem('Integrationskurse', 'assets/image/img002.png', () {}),
-              _buildRecentlyPlayedItem('Statistik', 'assets/image/img003.png', () {}),
+              _buildRecentlyPlayedItem('Alle Fragen', 'assets/image/img001.png', () => _startTrainingMode(context), theme),
+              _buildRecentlyPlayedItem('Integrationskurse', 'assets/image/img002.png', () {}, theme),
+              _buildRecentlyPlayedItem('Statistik', 'assets/image/img003.png', () {}, theme),
             ],
           ),
         ),
@@ -101,7 +103,7 @@ class MainMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentlyPlayedItem(String title, String imagePath, VoidCallback onTap) {
+  Widget _buildRecentlyPlayedItem(String title, String imagePath, VoidCallback onTap, ThemeData theme) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -123,7 +125,7 @@ class MainMenu extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -132,33 +134,30 @@ class MainMenu extends StatelessWidget {
   }
 
   Widget _buildTopMixtapes(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Optionen',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 16),
-        _buildTopMixtapeItem('Trainingsmodus', 'Lernen nach Spaced Repetition', 'assets/image/img004.png', () => _startTrainingMode(context)),
+        _buildTopMixtapeItem('Trainingsmodus', 'Lernen nach Spaced Repetition', 'assets/image/img004.png', () => _startTrainingMode(context), theme),
         const SizedBox(height: 16),
-        _buildTopMixtapeItem('Prüfungsmodus', 'Simulation der Prüfung', 'assets/image/img005.png', () => _showModeSelectionDialog(context, QuizMode.exam)),
+        _buildTopMixtapeItem('Prüfungsmodus', 'Simulation der Prüfung', 'assets/image/img005.png', () => _showModeSelectionDialog(context, QuizMode.exam), theme),
         const SizedBox(height: 16),
-        _buildTopMixtapeItem('Listen', 'Eigene Listen erstellen und verwalten', 'assets/image/img006.png', () {}),
+        _buildTopMixtapeItem('Listen', 'Eigene Listen erstellen und verwalten', 'assets/image/img006.png', () {}, theme),
       ],
     );
   }
 
-  Widget _buildTopMixtapeItem(String title, String subtitle, String imagePath, VoidCallback onTap) {
+  Widget _buildTopMixtapeItem(String title, String subtitle, String imagePath, VoidCallback onTap, ThemeData theme) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade900, Colors.blue.shade700],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
+          color: theme.primaryColor,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Padding(
@@ -184,11 +183,11 @@ class MainMenu extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     Text(
                       subtitle,
-                      style: TextStyle(color: Colors.grey.shade300, fontSize: 12),
+                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
                     ),
                   ],
                 ),
@@ -201,27 +200,28 @@ class MainMenu extends StatelessWidget {
   }
 
   Widget _buildListenAgain(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Wieder lernen',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 16),
-        _buildListenAgainItem('Markiert', 'Markierte Fragen zum Lernen', 'assets/image/img007.png', () {}),
+        _buildListenAgainItem('Markiert', 'Markierte Fragen zum Lernen', 'assets/image/img007.png', () {}, theme),
         const SizedBox(height: 16),
-        _buildListenAgainItem('Fehlgeschlagen', 'Falsch beantwortete Fragen', 'assets/image/img008.png', () {}),
+        _buildListenAgainItem('Fehlgeschlagen', 'Falsch beantwortete Fragen', 'assets/image/img008.png', () {}, theme),
       ],
     );
   }
 
-  Widget _buildListenAgainItem(String title, String subtitle, String imagePath, VoidCallback onTap) {
+  Widget _buildListenAgainItem(String title, String subtitle, String imagePath, VoidCallback onTap, ThemeData theme) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Padding(
@@ -246,11 +246,11 @@ class MainMenu extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       subtitle,
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                      style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
@@ -263,16 +263,17 @@ class MainMenu extends StatelessWidget {
   }
 
   Widget _buildNavigationBar(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      color: Colors.black,
+      color: theme.scaffoldBackgroundColor,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavBarItem(Icons.home, 'Start'),
-            _buildNavBarItem(Icons.chat_bubble, 'Chat'),
-            _buildNavBarItem(Icons.settings, 'Optionen', onTap: () {
+            _buildNavBarItem(Icons.home, 'Start', theme),
+            _buildNavBarItem(Icons.chat_bubble, 'Chat', theme),
+            _buildNavBarItem(Icons.settings, 'Optionen', theme, onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SettingsPage()),
@@ -284,15 +285,15 @@ class MainMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildNavBarItem(IconData icon, String label, {VoidCallback? onTap}) {
+  Widget _buildNavBarItem(IconData icon, String label, ThemeData theme, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white),
+          Icon(icon, color: theme.iconTheme.color),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          Text(label, style: theme.textTheme.bodySmall),
         ],
       ),
     );
@@ -314,7 +315,7 @@ class MainMenu extends StatelessWidget {
                 const Text('Trainingsmodus wird geladen'),
                 const SizedBox(height: 20),
                 SizedBox(
-                  width: 60, // Set a fixed width for the progress indicator
+                  width: 60,
                   child: const LinearProgressIndicator(),
                 ),
               ],
