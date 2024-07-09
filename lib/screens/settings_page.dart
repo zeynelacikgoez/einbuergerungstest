@@ -5,7 +5,7 @@ import '../services/language_service.dart';
 import '../services/training_mode_service.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {

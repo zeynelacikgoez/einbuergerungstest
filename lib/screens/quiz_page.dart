@@ -11,7 +11,7 @@ class QuizPage extends StatefulWidget {
   final QuizMode mode;
   final bool continueFromLast;
 
-  const QuizPage({super.key, required this.mode, required this.continueFromLast});
+  const QuizPage({Key? key, required this.mode, required this.continueFromLast}) : super(key: key);
 
   @override
   _QuizPageState createState() => _QuizPageState();
@@ -25,7 +25,7 @@ class _QuizPageState extends State<QuizPage> {
   bool showFeedback = false;
   bool? isLastAnswerCorrect;
   DateTime? examStartTime;
-  late Timer _timer;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -39,9 +39,7 @@ class _QuizPageState extends State<QuizPage> {
 
   @override
   void dispose() {
-    if (widget.mode == QuizMode.exam) {
-      _timer.cancel();
-    }
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -52,35 +50,44 @@ class _QuizPageState extends State<QuizPage> {
   }
 
   Future<void> _loadQuestions() async {
-    final allQuestions = await QuizService.loadQuestions();
-    setState(() {
-      questions = allQuestions;
-      if (widget.mode == QuizMode.exam) {
-        questions = questions.take(33).toList();
-      }
-      answerResults = List.filled(questions.length, null);
-    });
+    try {
+      final allQuestions = await QuizService.loadQuestions();
+      setState(() {
+        questions = widget.mode == QuizMode.exam ? allQuestions.take(33).toList() : allQuestions;
+        answerResults = List.filled(questions.length, null);
+      });
 
-    if (widget.continueFromLast) {
-      await _loadProgress();
+      if (widget.continueFromLast) {
+        await _loadProgress();
+      }
+    } catch (e) {
+      print('Error loading questions: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load questions: $e')),
+      );
     }
   }
 
   Future<void> _loadProgress() async {
-    final progress = await QuizService.loadProgress();
-    setState(() {
-      currentQuestionIndex = progress['currentQuestionIndex'];
-      correctAnswers = progress['correctAnswers'];
-      answerResults = List<bool?>.from(progress['answerResults']);
-    });
+    try {
+      final progress = await QuizService.loadProgress();
+      setState(() {
+        currentQuestionIndex = progress['currentQuestionIndex'];
+        correctAnswers = progress['correctAnswers'];
+        answerResults = List<bool?>.from(progress['answerResults']);
+      });
+    } catch (e) {
+      print('Error loading progress: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load progress: $e')),
+      );
+    }
   }
 
   void _checkAnswer(bool isCorrect) {
     setState(() {
       answerResults[currentQuestionIndex] = isCorrect;
-      if (isCorrect) {
-        correctAnswers++;
-      }
+      if (isCorrect) correctAnswers++;
       showFeedback = true;
       isLastAnswerCorrect = isCorrect;
     });
@@ -104,26 +111,26 @@ class _QuizPageState extends State<QuizPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Quiz beendet'),
+          title: const Text('Quiz Completed'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Sie haben $correctAnswers von ${questions.length} Fragen richtig beantwortet.'),
+              Text('You answered $correctAnswers out of ${questions.length} questions correctly.'),
               const SizedBox(height: 16),
-              Text('Erfolgsquote: ${(correctAnswers / questions.length * 100).toStringAsFixed(2)}%'),
+              Text('Success rate: ${(correctAnswers / questions.length * 100).toStringAsFixed(2)}%'),
             ],
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Übersicht'),
+              child: const Text('Overview'),
               onPressed: () {
                 Navigator.of(context).pop();
                 _navigateToOverview();
               },
             ),
             TextButton(
-              child: const Text('Zum Hauptmenü'),
+              child: const Text('Main Menu'),
               onPressed: () {
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
@@ -163,35 +170,6 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  Future<bool> _onWillPop() async {
-    bool hasAnsweredQuestions = answerResults.any((result) => result != null);
-
-    if (!hasAnsweredQuestions) {
-      return true;
-    }
-
-    return (await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${widget.mode == QuizMode.training ? 'Trainingsmodus' : 'Prüfungsmodus'} beenden?'),
-        content: const Text('Möchten Sie wirklich beenden? Ihr Fortschritt wird gespeichert.'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Nein'),
-          ),
-          TextButton(
-            onPressed: () {
-              QuizService.saveProgress(currentQuestionIndex, correctAnswers, answerResults);
-              Navigator.of(context).pop(true);
-            },
-            child: const Text('Ja'),
-          ),
-        ],
-      ),
-    )) ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (questions.isEmpty) {
@@ -201,15 +179,37 @@ class _QuizPageState extends State<QuizPage> {
     }
 
     return WillPopScope(
-      onWillPop: _onWillPop,
+      onWillPop: () async {
+        bool shouldPop = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Exit ${widget.mode == QuizMode.training ? 'Training' : 'Exam'} Mode?'),
+            content: const Text('Are you sure you want to exit? Your progress will be saved.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () {
+                  QuizService.saveProgress(currentQuestionIndex, correctAnswers, answerResults);
+                  Navigator.of(context).pop(true);
+                },
+                child: const Text('Yes'),
+              ),
+            ],
+          ),
+        ) ?? false;
+        return shouldPop;
+      },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.mode == QuizMode.training ? 'Trainingsmodus' : 'Prüfungsmodus'),
+          title: Text(widget.mode == QuizMode.training ? 'Training Mode' : 'Exam Mode'),
           actions: [
             IconButton(
               icon: const Icon(Icons.list),
               onPressed: _navigateToOverview,
-              tooltip: 'Übersicht',
+              tooltip: 'Overview',
             ),
             if (widget.mode == QuizMode.exam)
               Center(

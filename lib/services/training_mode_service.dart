@@ -1,88 +1,71 @@
-import 'dart:math';
 import 'package:flutter/foundation.dart';
-import '../models/question_model.dart';
-import '../models/user_profile_model.dart';
-import 'quiz_service.dart';
-import 'spaced_repetition_service.dart';
+import 'dart:math';
 
 class TrainingModeService extends ChangeNotifier {
-  List<QuestionModel> questions = [];
-  late UserProfileModel userProfile;
-  int sessionLength = 20;
-  bool _isInitialized = false;
+  List<QuestionModel> _questions = [];
+  int _currentIndex = 0;
+  bool _isLoading = true;
+  String? _error;
+  int _sessionLength = 20; // Default session length
 
-  TrainingModeService();
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  int get currentIndex => _currentIndex;
+  int get totalQuestions => _questions.length;
+  int get sessionLength => _sessionLength;
+  QuestionModel? get currentQuestion => 
+    _questions.isNotEmpty && _currentIndex < _questions.length 
+      ? _questions[_currentIndex] 
+      : null;
 
   Future<void> initialize() async {
-    if (_isInitialized) return;
-    
-    questions = await QuizService.loadQuestions();
-    userProfile = await QuizService.loadUserProfile();
-    _isInitialized = true;
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // Simulating API call to load questions
+      await Future.delayed(const Duration(seconds: 2));
+      _questions = [
+        QuestionModel(id: '1', question: 'Was ist die Hauptstadt von Deutschland?', correctAnswer: 'Berlin'),
+        QuestionModel(id: '2', question: 'Welche Farben hat die deutsche Flagge?', correctAnswer: 'Schwarz, Rot, Gold'),
+        QuestionModel(id: '3', question: 'Wer ist der aktuelle Bundeskanzler von Deutschland?', correctAnswer: 'Olaf Scholz'),
+        QuestionModel(id: '4', question: 'In welchem Jahr wurde die Berliner Mauer gebaut?', correctAnswer: '1961'),
+        QuestionModel(id: '5', question: 'Welcher Fluss fließt durch Berlin?', correctAnswer: 'Spree'),
+      ];
+      _questions.shuffle(Random());
+      _isLoading = false;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+    }
+
+    notifyListeners();
+  }
+
+  void nextQuestion() {
+    if (_currentIndex < _questions.length - 1) {
+      _currentIndex++;
+      notifyListeners();
+    }
+  }
+
+  void resetQuiz() {
+    _currentIndex = 0;
+    _questions.shuffle(Random());
     notifyListeners();
   }
 
   void setSessionLength(int length) {
-    sessionLength = length;
+    _sessionLength = length;
     notifyListeners();
   }
+}
 
-  QuestionModel? selectNextQuestion() {
-    if (!_isInitialized) throw StateError('TrainingModeService not initialized');
-    
-    QuestionModel? nextQuestion = SpacedRepetitionService.selectNextQuestion(questions);
-    if (nextQuestion == null) {
-      return _introduceNewQuestion();
-    }
-    return nextQuestion;
-  }
+class QuestionModel {
+  final String id;
+  final String question;
+  final String correctAnswer;
 
-  QuestionModel? _introduceNewQuestion() {
-    List<QuestionModel> newQuestions = questions.where((q) => q.lastAnswered == null).toList();
-    if (newQuestions.isEmpty) return null;
-    return _selectAppropriateDifficulty(newQuestions);
-  }
-
-  QuestionModel _selectAppropriateDifficulty(List<QuestionModel> questions) {
-    double avgStrength = userProfile.strengths.isNotEmpty
-        ? userProfile.strengths.values.reduce((a, b) => a + b) / userProfile.strengths.length
-        : 5;
-    int targetDifficulty = min(10, max(1, (avgStrength + 1).round()));
-    questions.sort((a, b) => (a.difficulty - targetDifficulty).abs().compareTo((b.difficulty - targetDifficulty).abs()));
-    return questions.first;
-  }
-
-  void updateQuestion(QuestionModel question, bool correct) {
-    int grade = correct ? 5 : 2; // Simplified grading: correct = 5, incorrect = 2
-    
-    question.interval = SpacedRepetitionService.calculateNextInterval(question, grade);
-    SpacedRepetitionService.updateEasinessFactor(question, grade);
-    question.lastAnswered = DateTime.now();
-
-    QuizService.saveQuestion(question);
-    notifyListeners();
-  }
-
-  void updateUserProfile(QuestionModel question, bool correct) {
-    String topic = '${question.part}-${question.section}';
-    if (correct) {
-      userProfile.strengths[topic] = min(10, (userProfile.strengths[topic] ?? 5) + 0.1);
-      userProfile.weaknesses[topic] = max(1, (userProfile.weaknesses[topic] ?? 5) - 0.2);
-    } else {
-      userProfile.weaknesses[topic] = min(10, (userProfile.weaknesses[topic] ?? 5) + 0.2);
-      userProfile.strengths[topic] = max(1, (userProfile.strengths[topic] ?? 5) - 0.1);
-    }
-    QuizService.saveUserProfile(userProfile);
-    notifyListeners();
-  }
-
-  Future<void> startNewSession() async {
-    if (!_isInitialized) await initialize();
-    notifyListeners();
-  }
-
-  Future<void> loadProgress() async {
-    if (!_isInitialized) await initialize();
-    notifyListeners();
-  }
+  QuestionModel({required this.id, required this.question, required this.correctAnswer});
 }
