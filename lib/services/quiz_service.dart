@@ -7,11 +7,25 @@ import '../models/user_profile_model.dart';
 class QuizService {
   static Future<List<QuestionModel>> loadQuestions() async {
     List<QuestionModel> allQuestions = [];
+    Map<String, String> translations = {};
     
-    for (var lang in ['de', 'tr']) {
-      String jsonString = await rootBundle.loadString('assets/language/questions-$lang.json');
-      List<dynamic> jsonList = json.decode(jsonString);
-      allQuestions.addAll(jsonList.map((json) => QuestionModel.fromJson(json)).toList());
+    // Load German questions
+    String deJsonString = await rootBundle.loadString('assets/language/questions-de.json');
+    List<dynamic> deJsonList = json.decode(deJsonString);
+    allQuestions = deJsonList.map((json) => QuestionModel.fromJson(json)).toList();
+    
+    // Load Turkish translations
+    String trJsonString = await rootBundle.loadString('assets/language/questions-tr.json');
+    List<dynamic> trJsonList = json.decode(trJsonString);
+    for (var trJson in trJsonList) {
+      translations[trJson['id']] = trJson['question']['text'];
+    }
+    
+    // Add translations to questions
+    for (var question in allQuestions) {
+      if (translations.containsKey(question.id)) {
+        question.question['translation'] = translations[question.id];
+      }
     }
     
     // Load saved question data

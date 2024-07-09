@@ -4,8 +4,10 @@ import '../models/quiz_mode.dart';
 import '../models/question_model.dart';
 import '../widgets/question_widget.dart';
 import '../services/quiz_service.dart';
+import '../services/language_service.dart';
 import '../utils/timer_utils.dart';
 import 'overview_page.dart';
+import 'package:provider/provider.dart';
 
 class QuizPage extends StatefulWidget {
   final QuizMode mode;
@@ -170,6 +172,24 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
+  void _showTranslation(BuildContext context, LanguageService languageService) {
+    final currentQuestion = questions[currentQuestionIndex];
+    final translatedText = currentQuestion.question['translation'] ?? 'Keine Übersetzung verfügbar';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Übersetzung (${languageService.translationLanguage})'),
+        content: Text(translatedText),
+        actions: [
+          TextButton(
+            child: const Text('Schließen'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (questions.isEmpty) {
@@ -177,6 +197,8 @@ class _QuizPageState extends State<QuizPage> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
+
+    final languageService = Provider.of<LanguageService>(context);
 
     return WillPopScope(
       onWillPop: () async {
@@ -210,6 +232,11 @@ class _QuizPageState extends State<QuizPage> {
               icon: const Icon(Icons.list),
               onPressed: _navigateToOverview,
               tooltip: 'Overview',
+            ),
+            IconButton(
+              icon: const Icon(Icons.translate),
+              onPressed: () => _showTranslation(context, languageService),
+              tooltip: 'Übersetzen',
             ),
             if (widget.mode == QuizMode.exam)
               Center(
