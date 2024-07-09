@@ -7,7 +7,7 @@ import '../models/user_profile_model.dart';
 class QuizService {
   static Future<List<QuestionModel>> loadQuestions() async {
     List<QuestionModel> allQuestions = [];
-    Map<String, String> translations = {};
+    Map<String, QuestionModel> translationMap = {};
     
     // Load German questions
     String deJsonString = await rootBundle.loadString('assets/language/questions-de.json');
@@ -18,13 +18,14 @@ class QuizService {
     String trJsonString = await rootBundle.loadString('assets/language/questions-tr.json');
     List<dynamic> trJsonList = json.decode(trJsonString);
     for (var trJson in trJsonList) {
-      translations[trJson['id']] = trJson['question']['text'];
+      QuestionModel trQuestion = QuestionModel.fromJson(trJson);
+      translationMap[trQuestion.id] = trQuestion;
     }
     
     // Add translations to questions
     for (var question in allQuestions) {
-      if (translations.containsKey(question.id)) {
-        question.question['translation'] = translations[question.id];
+      if (translationMap.containsKey(question.id)) {
+        question.translation = translationMap[question.id];
       }
     }
     

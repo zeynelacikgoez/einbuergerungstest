@@ -6,6 +6,7 @@ class QuestionWidget extends StatelessWidget {
   final bool showFeedback;
   final bool? isLastAnswerCorrect;
   final Function(bool) onAnswerSelected;
+  final bool showTranslation;
 
   const QuestionWidget({
     Key? key,
@@ -13,10 +14,15 @@ class QuestionWidget extends StatelessWidget {
     this.showFeedback = false,
     this.isLastAnswerCorrect,
     required this.onAnswerSelected,
+    this.showTranslation = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    QuestionModel displayQuestion = showTranslation && question.translation != null
+        ? question.translation!
+        : question;
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -24,24 +30,24 @@ class QuestionWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              '${question.part} - ${question.section}',
+              '${displayQuestion.part} - ${displayQuestion.section}',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              question.task,
+              displayQuestion.task,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Text(
-              question.question['text'],
+              displayQuestion.question['text'],
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 16),
-            if (question.question['imageReference'] != 'none')
-              Image.asset('assets/image/${question.question['imageReference']}'),
+            if (displayQuestion.question['imageReference'] != 'none')
+              Image.asset('assets/image/${displayQuestion.question['imageReference']}'),
             const SizedBox(height: 24),
-            ...question.options.map<Widget>((option) {
+            ...displayQuestion.options.map<Widget>((option) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: ElevatedButton(

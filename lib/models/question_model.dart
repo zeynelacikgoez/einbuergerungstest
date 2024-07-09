@@ -13,6 +13,7 @@ class QuestionModel {
   int incorrectStreak;
   double easinessFactor;
   int interval;
+  QuestionModel? translation;
 
   QuestionModel({
     required this.id,
@@ -27,6 +28,7 @@ class QuestionModel {
     this.incorrectStreak = 0,
     this.easinessFactor = 2.5,
     this.interval = 1,
+    this.translation,
   });
 
   factory QuestionModel.fromJson(Map<String, dynamic> json) {
@@ -76,6 +78,7 @@ class QuestionModel {
     int? incorrectStreak,
     double? easinessFactor,
     int? interval,
+    QuestionModel? translation,
   }) {
     return QuestionModel(
       id: id ?? this.id,
@@ -90,6 +93,7 @@ class QuestionModel {
       incorrectStreak: incorrectStreak ?? this.incorrectStreak,
       easinessFactor: easinessFactor ?? this.easinessFactor,
       interval: interval ?? this.interval,
+      translation: translation ?? this.translation,
     );
   }
 

@@ -2,16 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/training_mode_service.dart';
 import '../services/language_service.dart';
-import '../models/question_model.dart';
 import 'overview_page.dart';
+import '../widgets/question_widget.dart';
 
-class TrainingModePage extends StatelessWidget {
-  const TrainingModePage({super.key});
+class TrainingModePage extends StatefulWidget {
+  const TrainingModePage({Key? key}) : super(key: key);
+
+  @override
+  State<TrainingModePage> createState() => _TrainingModePageState();
+}
+
+class _TrainingModePageState extends State<TrainingModePage> {
+  bool showTranslation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TrainingModeService>(context, listen: false).initialize();
+    });
+  }
+
+  void _toggleTranslation() {
+    setState(() {
+      showTranslation = !showTranslation;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final languageService = Provider.of<LanguageService>(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Trainingsmodus'),
@@ -22,9 +41,9 @@ class TrainingModePage extends StatelessWidget {
             tooltip: 'Fragenübersicht',
           ),
           IconButton(
-            icon: const Icon(Icons.translate),
-            onPressed: () => _showTranslation(context, languageService),
-            tooltip: 'Übersetzen',
+            icon: Icon(showTranslation ? Icons.language : Icons.translate),
+            onPressed: _toggleTranslation,
+            tooltip: showTranslation ? 'Übersetzung ausblenden' : 'Übersetzen',
           ),
         ],
       ),
@@ -43,55 +62,19 @@ class TrainingModePage extends StatelessWidget {
             return const Center(child: Text('Keine Fragen verfügbar'));
           }
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Frage ${trainingModeService.currentIndex + 1} von ${trainingModeService.totalQuestions}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  currentQuestion.question['text'] ?? '',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  child: const Text('Nächste Frage'),
-                  onPressed: () {
-                    if (trainingModeService.currentIndex < trainingModeService.totalQuestions - 1) {
-                      trainingModeService.nextQuestion();
-                    } else {
-                      // Quiz beendet
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Training abgeschlossen'),
-                          content: const Text('Sie haben alle Fragen beantwortet.'),
-                          actions: [
-                            TextButton(
-                              child: const Text('Neustart'),
-                              onPressed: () {
-                                trainingModeService.resetQuiz();
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                            TextButton(
-                              child: const Text('Hauptmenü'),
-                              onPressed: () {
-                                Navigator.of(context).popUntil((route) => route.isFirst);
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
+          return QuestionWidget(
+            question: currentQuestion,
+            showFeedback: false,
+            isLastAnswerCorrect: null,
+            onAnswerSelected: (bool isCorrect) {
+              trainingModeService.answerQuestion(isCorrect);
+              if (trainingModeService.isQuizCompleted()) {
+                _showCompletionDialog(context, trainingModeService);
+              } else {
+                trainingModeService.nextQuestion();
+              }
+            },
+            showTranslation: showTranslation,
           );
         },
       ),
@@ -120,24 +103,28 @@ class TrainingModePage extends StatelessWidget {
     );
   }
 
-  void _showTranslation(BuildContext context, LanguageService languageService) {
-    final trainingModeService = Provider.of<TrainingModeService>(context, listen: false);
-    final currentQuestion = trainingModeService.currentQuestion;
-    if (currentQuestion != null) {
-      final translatedText = languageService.translate(currentQuestion.question['text'] ?? '');
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Übersetzung (${languageService.translationLanguage})'),
-          content: Text(translatedText),
-          actions: [
-            TextButton(
-              child: const Text('Schließen'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      );
-    }
+  void _showCompletionDialog(BuildContext context, TrainingModeService trainingModeService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Training abgeschlossen'),
+        content: Text('Sie haben ${trainingModeService.getCorrectAnswersCount()} von ${trainingModeService.totalQuestions} Fragen richtig beantwortet.'),
+        actions: [
+          TextButton(
+            child: const Text('Neustart'),
+            onPressed: () {
+              trainingModeService.resetQuiz();
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text('Hauptmenü'),
+            onPressed: () {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

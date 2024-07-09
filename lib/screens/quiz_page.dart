@@ -13,10 +13,10 @@ class QuizPage extends StatefulWidget {
   final QuizMode mode;
   final bool continueFromLast;
 
-  const QuizPage({Key? key, required this.mode, required this.continueFromLast}) : super(key: key);
+  const QuizPage({super.key, required this.mode, required this.continueFromLast});
 
   @override
-  _QuizPageState createState() => _QuizPageState();
+  State<QuizPage> createState() => _QuizPageState();
 }
 
 class _QuizPageState extends State<QuizPage> {
@@ -28,6 +28,7 @@ class _QuizPageState extends State<QuizPage> {
   bool? isLastAnswerCorrect;
   DateTime? examStartTime;
   Timer? _timer;
+  bool showTranslation = false;
 
   @override
   void initState() {
@@ -54,6 +55,7 @@ class _QuizPageState extends State<QuizPage> {
   Future<void> _loadQuestions() async {
     try {
       final allQuestions = await QuizService.loadQuestions();
+      if (!mounted) return;
       setState(() {
         questions = widget.mode == QuizMode.exam ? allQuestions.take(33).toList() : allQuestions;
         answerResults = List.filled(questions.length, null);
@@ -63,7 +65,7 @@ class _QuizPageState extends State<QuizPage> {
         await _loadProgress();
       }
     } catch (e) {
-      print('Error loading questions: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load questions: $e')),
       );
@@ -73,13 +75,14 @@ class _QuizPageState extends State<QuizPage> {
   Future<void> _loadProgress() async {
     try {
       final progress = await QuizService.loadProgress();
+      if (!mounted) return;
       setState(() {
         currentQuestionIndex = progress['currentQuestionIndex'];
         correctAnswers = progress['correctAnswers'];
         answerResults = List<bool?>.from(progress['answerResults']);
       });
     } catch (e) {
-      print('Error loading progress: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load progress: $e')),
       );
@@ -95,6 +98,7 @@ class _QuizPageState extends State<QuizPage> {
     });
 
     Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
       setState(() {
         showFeedback = false;
         if (currentQuestionIndex < questions.length - 1) {
@@ -172,22 +176,10 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  void _showTranslation(BuildContext context, LanguageService languageService) {
-    final currentQuestion = questions[currentQuestionIndex];
-    final translatedText = currentQuestion.question['translation'] ?? 'Keine Übersetzung verfügbar';
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Übersetzung (${languageService.translationLanguage})'),
-        content: Text(translatedText),
-        actions: [
-          TextButton(
-            child: const Text('Schließen'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
-    );
+  void _toggleTranslation() {
+    setState(() {
+      showTranslation = !showTranslation;
+    });
   }
 
   @override
@@ -198,11 +190,11 @@ class _QuizPageState extends State<QuizPage> {
       );
     }
 
-    final languageService = Provider.of<LanguageService>(context);
-
-    return WillPopScope(
-      onWillPop: () async {
-        bool shouldPop = await showDialog(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final bool shouldPop = await showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: Text('Exit ${widget.mode == QuizMode.training ? 'Training' : 'Exam'} Mode?'),
@@ -222,7 +214,9 @@ class _QuizPageState extends State<QuizPage> {
             ],
           ),
         ) ?? false;
-        return shouldPop;
+        if (shouldPop) {
+          Navigator.of(context).pop();
+        }
       },
       child: Scaffold(
         appBar: AppBar(
@@ -234,9 +228,9 @@ class _QuizPageState extends State<QuizPage> {
               tooltip: 'Overview',
             ),
             IconButton(
-              icon: const Icon(Icons.translate),
-              onPressed: () => _showTranslation(context, languageService),
-              tooltip: 'Übersetzen',
+              icon: Icon(showTranslation ? Icons.language : Icons.translate),
+              onPressed: _toggleTranslation,
+              tooltip: showTranslation ? 'Übersetzung ausblenden' : 'Übersetzen',
             ),
             if (widget.mode == QuizMode.exam)
               Center(
@@ -255,6 +249,7 @@ class _QuizPageState extends State<QuizPage> {
           showFeedback: showFeedback,
           isLastAnswerCorrect: isLastAnswerCorrect,
           onAnswerSelected: _checkAnswer,
+          showTranslation: showTranslation,
         ),
       ),
     );

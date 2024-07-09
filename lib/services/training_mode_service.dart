@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'dart:math';
 import '../models/question_model.dart';
+import '../services/quiz_service.dart';
 
 class TrainingModeService extends ChangeNotifier {
   List<QuestionModel> _questions = [];
@@ -28,24 +29,11 @@ class TrainingModeService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulating API call to load questions
-      await Future.delayed(const Duration(seconds: 2));
-      _questions = [
-        QuestionModel(
-          id: '1',
-          part: 'Teil 1',
-          section: 'Abschnitt A',
-          task: 'Wählen Sie die richtige Antwort',
-          question: {'text': 'Was ist die Hauptstadt von Deutschland?'},
-          options: [
-            {'text': 'Berlin', 'isCorrect': true},
-            {'text': 'Hamburg', 'isCorrect': false},
-            {'text': 'München', 'isCorrect': false},
-            {'text': 'Köln', 'isCorrect': false},
-          ],
-        ),
-        // Add more questions here...
-      ];
+      // Lade die Fragen aus dem QuizService
+      _questions = await QuizService.loadQuestions();
+      if (_questions.isEmpty) {
+        throw Exception('Keine Fragen verfügbar');
+      }
       _answerResults = List.filled(_questions.length, null);
       _questions.shuffle(Random());
       _isLoading = false;
@@ -81,5 +69,20 @@ class TrainingModeService extends ChangeNotifier {
   void setSessionLength(int length) {
     _sessionLength = length;
     notifyListeners();
+  }
+
+  void answerQuestion(bool isCorrect) {
+    if (_currentIndex < _answerResults.length) {
+      _answerResults[_currentIndex] = isCorrect;
+      notifyListeners();
+    }
+  }
+
+  bool isQuizCompleted() {
+    return _currentIndex >= _questions.length - 1;
+  }
+
+  int getCorrectAnswersCount() {
+    return _answerResults.where((result) => result == true).length;
   }
 }
