@@ -9,143 +9,356 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final languageService = Provider.of<LanguageService>(context);
-    final trainingModeService = Provider.of<TrainingModeService>(context);
-    final themeService = Provider.of<ThemeService>(context);
     final theme = Theme.of(context);
-
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Einstellungen',
-              style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              children: [
-                _buildSettingSection(
-                  context,
-                  title: 'Sprache & Übersetzung',
-                  children: [
-                    _buildSettingItem(
-                      context,
-                      title: 'App-Sprache',
-                      child: DropdownButton<Locale>(
-                        value: languageService.currentLocale,
-                        onChanged: (Locale? newValue) {
-                          if (newValue != null) {
-                            languageService.changeLanguage(newValue);
-                          }
-                        },
-                        items: languageService.supportedLocales.map<DropdownMenuItem<Locale>>((Locale locale) {
-                          return DropdownMenuItem<Locale>(
-                            value: locale,
-                            child: Text(languageService.getLanguageName(locale)),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    _buildSettingItem(
-                      context,
-                      title: 'Übersetzungssprache',
-                      child: DropdownButton<String>(
-                        value: languageService.translationLanguage,
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            languageService.setTranslationLanguage(newValue);
-                          }
-                        },
-                        items: ['Türkisch', 'Arabisch'].map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-                _buildSettingSection(
-                  context,
-                  title: 'Trainingsmodus',
-                  children: [
-                    _buildSettingItem(
-                      context,
-                      title: 'Sitzungslänge',
-                      child: DropdownButton<int>(
-                        value: trainingModeService.sessionLength,
-                        onChanged: (int? newValue) {
-                          if (newValue != null) {
-                            trainingModeService.setSessionLength(newValue);
-                          }
-                        },
-                        items: [10, 20, 30, 40, 50]
-                            .map<DropdownMenuItem<int>>((int value) {
-                          return DropdownMenuItem<int>(
-                            value: value,
-                            child: Text('$value Fragen'),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-                _buildSettingSection(
-                  context,
-                  title: 'Darstellung',
-                  children: [
-                    _buildSettingItem(
-                      context,
-                      title: 'Dunkler Modus',
-                      child: Switch(
-                        value: themeService.darkMode,
-                        onChanged: (bool value) {
-                          themeService.toggleTheme();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Einstellungen', style: theme.textTheme.headlineSmall),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: theme.colorScheme.primary),
+      ),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _buildLanguageSection(context)),
+            SliverToBoxAdapter(child: _buildTrainingSection(context)),
+            SliverToBoxAdapter(child: _buildAppearanceSection(context)),
+            SliverToBoxAdapter(child: _buildAboutSection(context)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSettingSection(BuildContext context, {required String title, required List<Widget> children}) {
+  Widget _buildLanguageSection(BuildContext context) {
+    return _buildSection(
+      context: context,
+      icon: Icons.language,
+      title: 'Sprache & Übersetzung',
+      children: [
+        Consumer<LanguageService>(
+          builder: (context, languageService, child) => _buildSettingItem(
+            context: context,
+            title: 'App-Sprache',
+            subtitle: languageService.getLanguageName(languageService.currentLocale),
+            onTap: () => _showLanguageDialog(context, languageService),
+          ),
+        ),
+        Consumer<LanguageService>(
+          builder: (context, languageService, child) => _buildSettingItem(
+            context: context,
+            title: 'Übersetzungssprache',
+            subtitle: languageService.translationLanguage,
+            onTap: () => _showTranslationLanguageDialog(context, languageService),
+          ),
+        ),
+      ],
+      showDivider: true,
+    );
+  }
+
+  Widget _buildTrainingSection(BuildContext context) {
+    return _buildSection(
+      context: context,
+      icon: Icons.fitness_center,
+      title: 'Trainingsmodus',
+      children: [
+        Consumer<TrainingModeService>(
+          builder: (context, trainingModeService, child) => _buildSettingItem(
+            context: context,
+            title: 'Sitzungslänge',
+            subtitle: '${trainingModeService.sessionLength} Fragen',
+            onTap: () => _showSessionLengthDialog(context, trainingModeService),
+          ),
+        ),
+      ],
+      showDivider: true,
+    );
+  }
+
+  Widget _buildAppearanceSection(BuildContext context) {
+    return _buildSection(
+      context: context,
+      icon: Icons.palette,
+      title: 'Darstellung',
+      children: [
+        Consumer<ThemeService>(
+          builder: (context, themeService, child) => _buildSwitchItem(
+            context: context,
+            title: 'Dunkler Modus',
+            subtitle: themeService.darkMode ? 'Aktiviert' : 'Deaktiviert',
+            value: themeService.darkMode,
+            onChanged: (value) => themeService.toggleTheme(),
+          ),
+        ),
+      ],
+      showDivider: true,
+    );
+  }
+
+  Widget _buildAboutSection(BuildContext context) {
+    return _buildSection(
+      context: context,
+      icon: Icons.info_outline,
+      title: 'Über die App',
+      children: [
+        _buildSettingItem(
+          context: context,
+          title: 'Version',
+          subtitle: '1.0.0',
+          onTap: () {},
+        ),
+        _buildSettingItem(
+          context: context,
+          title: 'Lizenzen',
+          subtitle: 'Open-Source Lizenzen',
+          onTap: () => showLicensePage(context: context),
+        ),
+      ],
+      showDivider: false,
+    );
+  }
+
+  Widget _buildSection({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required List<Widget> children,
+    required bool showDivider,
+  }) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Row(
+            children: [
+              Icon(icon, color: theme.colorScheme.secondary, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+            ],
           ),
         ),
         ...children,
-        const Divider(),
+        if (showDivider) _buildSubtleDivider(context),
       ],
     );
   }
 
-  Widget _buildSettingItem(BuildContext context, {required String title, required Widget child}) {
+  Widget _buildSubtleDivider(BuildContext context) {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            Theme.of(context).dividerColor.withOpacity(0.3),
+            Theme.of(context).dividerColor.withOpacity(0.3),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.1, 0.9, 1.0],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItem({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: theme.colorScheme.secondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchItem({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          child,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: theme.colorScheme.secondary,
+          ),
         ],
       ),
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context, LanguageService languageService) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'App-Sprache auswählen',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  children: languageService.supportedLocales.map((locale) {
+                    return ListTile(
+                      title: Text(languageService.getLanguageName(locale)),
+                      trailing: languageService.currentLocale == locale
+                          ? Icon(Icons.check, color: Theme.of(context).colorScheme.secondary)
+                          : null,
+                      onTap: () {
+                        languageService.changeLanguage(locale);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTranslationLanguageDialog(BuildContext context, LanguageService languageService) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Übersetzungssprache auswählen',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  children: ['Türkisch', 'Arabisch'].map((language) {
+                    return ListTile(
+                      title: Text(language),
+                      trailing: languageService.translationLanguage == language
+                          ? Icon(Icons.check, color: Theme.of(context).colorScheme.secondary)
+                          : null,
+                      onTap: () {
+                        languageService.setTranslationLanguage(language);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSessionLengthDialog(BuildContext context, TrainingModeService trainingModeService) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Sitzungslänge auswählen',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  children: [10, 20, 30, 40, 50].map((length) {
+                    return ListTile(
+                      title: Text('$length Fragen'),
+                      trailing: trainingModeService.sessionLength == length
+                          ? Icon(Icons.check, color: Theme.of(context).colorScheme.secondary)
+                          : null,
+                      onTap: () {
+                        trainingModeService.setSessionLength(length);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

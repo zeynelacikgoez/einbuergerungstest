@@ -14,7 +14,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final List<Widget> _pages = [
     const MainMenu(),
-    const Center(child: Text('Chat')), // Platzhalter für Chat-Seite
+    const Center(child: Text('Chat')), // Placeholder for Chat page
     const SettingsPage(),
   ];
 
@@ -32,31 +32,26 @@ class _MainScaffoldState extends State<MainScaffold> {
         index: _selectedIndex,
         children: _pages,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
-        ),
-        child: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Start',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.chat),
-              label: 'Chat',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Optionen',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: theme.primaryColor,
-          unselectedItemColor: theme.unselectedWidgetColor,
-          onTap: _onItemTapped,
-          backgroundColor: theme.scaffoldBackgroundColor,
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Start',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat),
+            label: 'Chat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Optionen',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: theme.primaryColor,
+        unselectedItemColor: theme.unselectedWidgetColor,
+        onTap: _onItemTapped,
+        backgroundColor: theme.scaffoldBackgroundColor,
       ),
     );
   }
